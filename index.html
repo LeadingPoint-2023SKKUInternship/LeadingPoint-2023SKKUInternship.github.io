@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Cloud Storage Speed Comparison February 2023</title>
+
+        <link rel="stylesheet" href="./dist/bootstrap.min.css">
+        <script src="./dist/papaparse.min.js"></script>
+        <script src="./dist/chart.min.js"></script>
+        <script src="./dist/bootstrap.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <center><H1>Cloud Storage Speed Comparison February 2023</H1></center>
+            <canvas id="index-chart"></canvas>
+            <table class="table">
+                <thead>
+                    <tr id="tabletheadtr">
+                    </tr>
+                </thead>
+                <tbody id="tabletbody">
+                </tbody>
+            </table>
+        </div>
+        <script>
+            Papa.parse('result.csv', {
+                download: true,
+                complete: function(results, file) {
+                    var array_day = [];
+                    for (i = 2; i < 7; i++) {
+                        array_day.push(results.data[i][0].substring(5));
+                    }
+                    var array_time = [results.data[0][1], results.data[0][3]];
+                    var array_labels = array_day.flatMap(d => array_time.map(v => d + ' ' + v));
+                    array_labels = array_labels.flatMap(d => ['b2', 'b3'].map(v => d + ' ' + v));
+
+                    var array_borderColor = ['#FFA000', '#FFC107', '#D32F2F', '#F44336', '#E57373', '#1976D2', '#2196F3', '#388E3C'];
+                    var array_datasets = [];
+                    for (i = 0; i < results.data.length; i = i + 8) {
+                        var label = results.data[i][0] + '-' + results.data[i + 1][0];
+
+                        var data = [];
+                        for (j = 2; j < 7; j++) {
+                            for (k = 1; k < 5; k++) {
+                                data.push(results.data[i + j][k]);
+                            }
+                        }
+
+                        array_datasets.push({'label': label, 'data': data, 'fill': false, 'borderColor': array_borderColor[i / 8], 'lineTension': 0.0});
+                    }
+
+                    //How to Create Custom Tooltip with Canvas API in Chart JS
+                    new Chart(document.getElementById('index-chart'), {
+                        'type': 'line',
+                        'data': {
+                            'labels': array_labels,
+                            'datasets': array_datasets
+                        },
+                        'options':{
+                            scales: {
+                                y: {
+                                    min: 40,
+                                    max: 100
+                                }
+                            }
+                        }
+                    })
+
+                    const tabletheadtr = document.getElementById('tabletheadtr');
+                    for (i = -8; i < results.data.length; i = i + 8) {
+                        if (i >= 0) {
+                            var label = results.data[i][0] + '-' + results.data[i + 1][0];
+                        } else {
+                            var label = ''
+                        }
+
+                        var tabledata_th = document.createElement('th');
+                        tabledata_th.appendChild(document.createTextNode(label))
+                        tabletheadtr.append(tabledata_th)
+                    }
+
+                    const tabletbody = document.getElementById('tabletbody')
+                    for (i = 0; i < array_labels.length; i++) {
+                        var tabledata_tr = document.createElement('tr');
+                        var tabledata_th = document.createElement('th');
+                        tabledata_th.appendChild(document.createTextNode(array_labels[i]));
+                        tabledata_tr.appendChild(tabledata_th);
+                    
+                        for (j = 0; j < array_datasets.length; j++) {
+                            var tabledata_td = document.createElement('td');
+                            var tabledata_a = document.createElement('a');
+                            tabledata_a.appendChild(document.createTextNode(array_datasets[j].data[i]));
+
+                            var array_labels_tokenized = array_labels[i].replace('-', '').toLowerCase().split(' ');
+                            tabledata_a.href = 'task_manager/';
+                            tabledata_a.href += '2023' + array_labels_tokenized[0];
+                            tabledata_a.href += '-' + array_datasets[j].label.toLocaleLowerCase();
+                            tabledata_a.href += '-' + array_labels_tokenized[1];
+                            tabledata_a.href += '-' + array_labels_tokenized[2];
+                            tabledata_a.href += '.PNG';
+
+                            tabledata_td.append(tabledata_a);
+                            tabledata_tr.appendChild(tabledata_td);
+                        }
+
+                        tabletbody.appendChild(tabledata_tr);
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
